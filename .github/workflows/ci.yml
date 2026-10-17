@@ -37,6 +37,16 @@ jobs:
       - run: make test
       - run: go tool cover -func=cover.out | tail -1
 
+  vuln:
+    name: govulncheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
   manifests:
     name: helm lint · kubeconform (helm + kustomize)
     runs-on: ubuntu-latest

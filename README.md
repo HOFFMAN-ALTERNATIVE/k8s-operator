@@ -7,10 +7,9 @@
 ![Helm](https://img.shields.io/badge/deploy-Helm%20%7C%20kustomize-0F1689?logo=helm&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-A production-shaped **Kubernetes operator** (Go, controller-runtime v0.25,
-kubebuilder layout) for **namespace-as-a-service multi-tenancy**. Platform
-teams declare a `Tenant`; the operator provisions and *keeps* an isolated,
-quota-bounded namespace for it:
+Give a team a namespace with one YAML object and keep it that way. A `Tenant` resource makes the operator create the namespace, quota, default limits, network isolation, Pod Security level and admin RoleBinding, and put them back if someone edits or deletes them by hand. Built in Go on controller-runtime v0.25 with the kubebuilder layout.
+
+Verified against a real API server, not mocks: the envtest suite runs kube-apiserver and etcd 1.37 (79.6 % statement coverage of the controller), and a kind e2e job installs the operator through both Helm and kustomize, then proves isolation with `kubectl auth can-i` and a privileged pod that Pod Security Admission rejects.
 
 ```yaml
 apiVersion: tenancy.hoffman-alternative.io/v1alpha1
@@ -84,15 +83,17 @@ flowchart TD
 
 ## Design decisions
 
+ADRs: [0001 server-side apply instead of CreateOrUpdate](docs/adr/0001-server-side-apply.md), [0002 never adopt existing namespaces](docs/adr/0002-never-adopt-existing-namespaces.md), [0003 validation in the API server with CEL, no webhooks](docs/adr/0003-cel-validation-instead-of-webhooks.md).
+
 - **Level-triggered and idempotent.** Each reconcile recomputes the *entire*
-  desired state from the spec and applies it — no diffing of "what changed",
+  desired state from the spec and applies it. There is no diffing of "what changed",
   so missed or coalesced events can't leave things half-done.
 - **Server-side apply with typed apply configurations** (`client.Apply` +
   `k8s.io/client-go/applyconfigurations`) instead of `CreateOrUpdate`. No
   read-modify-write races, no `resourceVersion` conflicts, and field
   ownership is tracked by the API server under the `tenant-operator` manager.
   `ForceOwnership` means the operator wins conflicts on the fields it
-  declares — which is exactly what makes **drift correction** work: a hand
+  declares, which is exactly what makes **drift correction** work: a hand
   edit to the quota triggers a watch event (owner reference), and the next
   apply puts it back.
 - **Owner references + a finalizer, for different reasons.** Owner refs give
@@ -106,7 +107,7 @@ flowchart TD
   putting someone else's workloads under this tenant's quota and admins, and
   deleting such a tenant never touches that namespace (tested).
 - **Prune only what we own.** Removing `quota` from the spec deletes the
-  quota — but only if it carries the operator's `managed-by` label; a
+  quota, but only if it carries the operator's `managed-by` label; a
   same-named object created by a human survives (tested).
 - **Validation lives in the API server.** OpenAPI schema (enums, DNS-label
   pattern, `maxProperties`), schema defaults, and **CEL transition rules**
@@ -124,7 +125,7 @@ flowchart TD
   `admin` contains. Metrics are served over HTTPS behind TokenReview/SAR
   authn/authz; HTTP/2 is disabled on that endpoint.
 - **Hardened runtime.** Distroless non-root image, read-only root FS, all
-  capabilities dropped, `RuntimeDefault` seccomp — passes the `restricted`
+  capabilities dropped, `RuntimeDefault` seccomp. It passes the `restricted`
   Pod Security Standard itself.
 - **One source of truth for manifests.** `make manifests` writes the CRD and
   ClusterRole from Go markers into `config/` *and* the Helm chart; CI fails if
@@ -182,6 +183,10 @@ then set `image.repository`/`image.tag` (Helm) or the `images:` override in
 The Tenant is **cluster-scoped** (it creates a namespace, so it can't live in
 one). Short name: `tn`.
 
+## Operations
+
+The manager exposes `/healthz` and `/readyz` (wired to the chart's liveness and readiness probes), runs with leader election so two replicas never reconcile at once, and drains on SIGTERM through controller-runtime's signal handler. Requests and limits are set in the chart (10m/64Mi requested, 500m/128Mi limit). Security reporting and the threat model: [SECURITY.md](SECURITY.md).
+
 ## Layout
 
 ```
@@ -193,10 +198,13 @@ charts/tenant-operator/  Helm chart (CRD + rules synced by make manifests)
 test/e2e/                kind end-to-end script + image overlay
 ```
 
-## Roadmap
+## Limits and roadmap
 
-- Validating/defaulting webhooks are unnecessary for this API (CEL covers it);
-  a conversion webhook arrives with `v1beta1`.
+- The API is `v1alpha1`. Fields can still change; a conversion webhook arrives with `v1beta1`.
+- One namespace per tenant. Hierarchical quotas across several namespaces are not supported.
+- Network isolation covers ingress only. Egress is unrestricted until egress presets land, so tenant pods can reach the internet and any cluster Service outside tenant namespaces.
+- `admins` get the built-in `admin` ClusterRole. Custom per-tenant roles are not modelled.
+- Validating/defaulting webhooks are unnecessary for this API (CEL covers it).
 - Egress policy presets, per-tenant `PriorityClass` limits, hierarchical
   quotas across several namespaces per tenant.
 
@@ -210,4 +218,4 @@ docker pull ghcr.io/hoffman-alternative/k8s-operator:latest
 
 ## License
 
-[MIT](LICENSE) © 2026 Herman Hoffman
+[MIT](LICENSE)

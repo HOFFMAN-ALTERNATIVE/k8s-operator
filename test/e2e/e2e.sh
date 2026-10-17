@@ -50,7 +50,7 @@ kubectl wait tenant/team-a --for=condition=Ready --timeout=90s
 kubectl get tenants
 
 [[ $(kubectl get ns team-a -o jsonpath='{.metadata.labels.pod-security\.kubernetes\.io/enforce}') == restricted ]] || fail "PSA label missing"
-kubectl -n team-a get resourcequota tenant-quota limitrange/tenant-defaults rolebinding/tenant-admins >/dev/null
+kubectl -n team-a get resourcequota/tenant-quota limitrange/tenant-defaults rolebinding/tenant-admins >/dev/null
 [[ $(kubectl -n team-a get networkpolicy -o name | wc -l) -eq 2 ]] || fail "expected 2 NetworkPolicies"
 
 log "RBAC: group team-a-admins is admin in team-a and nowhere else"

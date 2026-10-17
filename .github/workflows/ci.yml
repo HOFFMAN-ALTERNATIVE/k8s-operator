@@ -1,0 +1,67 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: golangci-lint v2
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.15.0
+
+  test:
+    name: envtest (kube-apiserver 1.37) · generated files up to date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: controller-gen output is committed
+        run: make verify
+      - run: make test
+      - run: go tool cover -func=cover.out | tail -1
+
+  manifests:
+    name: helm lint · kubeconform (helm + kustomize)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: azure/setup-helm@v4
+      - name: install kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz -C /usr/local/bin kubeconform
+      - run: make helm-lint
+      - run: kubectl kustomize config/default | kubeconform -strict -summary -skip CustomResourceDefinition
+
+  e2e:
+    name: kind e2e · install via ${{ matrix.method }}
+    needs: [test]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        method: [kustomize, helm]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: helm/kind-action@v1.15.1
+        with:
+          cluster_name: kind
+      - uses: azure/setup-helm@v4
+      - run: kubectl version
+      - run: ./test/e2e/e2e.sh ${{ matrix.method }}

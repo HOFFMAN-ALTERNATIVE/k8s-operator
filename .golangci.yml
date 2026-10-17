@@ -1,0 +1,32 @@
+version: "2"
+run:
+  timeout: 5m
+linters:
+  enable:
+    - bodyclose
+    - errorlint
+    - gosec
+    - misspell
+    - prealloc
+    - revive
+    - unconvert
+    - ginkgolinter
+    - nolintlint
+  settings:
+    revive:
+      rules:
+        - name: exported
+        - name: var-naming
+        - name: indent-error-flow
+        - name: error-return
+  exclusions:
+    generated: lax
+    rules:
+      - path: _test\.go
+        linters: [gosec, prealloc]
+      - path: zz_generated
+        linters: [revive]
+formatters:
+  enable:
+    - gofmt
+    - goimports

@@ -1,0 +1,24 @@
+apiVersion: tenancy.hoffman-alternative.io/v1alpha1
+kind: Tenant
+metadata:
+  name: team-a
+spec:
+  admins:
+    - kind: Group
+      name: team-a-admins
+  quota:
+    requests.cpu: "4"
+    requests.memory: 8Gi
+    limits.cpu: "8"
+    limits.memory: 16Gi
+    pods: "50"
+  defaultLimits:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  podSecurity: restricted
+  networkIsolation: true
+  deletionPolicy: Delete

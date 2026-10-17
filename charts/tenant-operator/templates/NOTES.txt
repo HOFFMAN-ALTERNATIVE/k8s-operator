@@ -1,0 +1,5 @@
+tenant-operator {{ .Chart.AppVersion }} is running in {{ .Release.Namespace }}.
+
+Create a tenant:
+  kubectl apply -f https://raw.githubusercontent.com/HOFFMAN-ALTERNATIVE/k8s-operator/main/config/samples/tenancy_v1alpha1_tenant.yaml
+  kubectl get tenants

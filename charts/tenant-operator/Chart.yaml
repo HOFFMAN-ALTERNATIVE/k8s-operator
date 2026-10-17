@@ -1,0 +1,13 @@
+apiVersion: v2
+name: tenant-operator
+description: Kubernetes operator that provisions isolated, quota-bounded tenant namespaces from a Tenant custom resource.
+type: application
+version: 0.1.0
+appVersion: "v0.1.0"
+kubeVersion: ">=1.30.0-0"
+keywords: [operator, multi-tenancy, namespaces, resourcequota, networkpolicy, pod-security]
+home: https://github.com/HOFFMAN-ALTERNATIVE/k8s-operator
+sources: [https://github.com/HOFFMAN-ALTERNATIVE/k8s-operator]
+maintainers:
+  - name: Herman Hoffman
+    url: https://github.com/HOFFMAN-ALTERNATIVE

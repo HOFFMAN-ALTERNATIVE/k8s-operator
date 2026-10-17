@@ -1,0 +1,9 @@
+# e2e overlay: the locally built image loaded into kind.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../../config/default
+images:
+  - name: ghcr.io/hoffman-alternative/tenant-operator
+    newName: tenant-operator
+    newTag: e2e

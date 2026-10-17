@@ -1,0 +1,37 @@
+# -- Number of manager replicas. >1 requires leaderElection.enabled.
+replicaCount: 1
+
+image:
+  repository: ghcr.io/hoffman-alternative/tenant-operator
+  tag: ""          # defaults to .Chart.AppVersion
+  pullPolicy: IfNotPresent
+
+leaderElection:
+  enabled: true
+
+metrics:
+  # HTTPS /metrics protected by Kubernetes authn/authz (TokenReview + SAR).
+  enabled: true
+  port: 8443
+
+logLevel: info
+
+resources:
+  requests: {cpu: 10m, memory: 64Mi}
+  limits: {cpu: 500m, memory: 128Mi}
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}

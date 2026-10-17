@@ -1,0 +1,28 @@
+# Aggregated roles so cluster admins can delegate Tenant management.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tenant-editor-role
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+rules:
+  - apiGroups: [tenancy.hoffman-alternative.io]
+    resources: [tenants]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [tenancy.hoffman-alternative.io]
+    resources: [tenants/status]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tenant-viewer-role
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+rules:
+  - apiGroups: [tenancy.hoffman-alternative.io]
+    resources: [tenants]
+    verbs: [get, list, watch]
+  - apiGroups: [tenancy.hoffman-alternative.io]
+    resources: [tenants/status]
+    verbs: [get]

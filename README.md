@@ -200,6 +200,14 @@ test/e2e/                kind end-to-end script + image overlay
 - Egress policy presets, per-tenant `PriorityClass` limits, hierarchical
   quotas across several namespaces per tenant.
 
+## Container image
+
+Multi-arch (amd64/arm64) images are published to GitHub Container Registry on every release:
+
+```bash
+docker pull ghcr.io/hoffman-alternative/k8s-operator:latest
+```
+
 ## License
 
 [MIT](LICENSE) © 2026 Herman Hoffman
